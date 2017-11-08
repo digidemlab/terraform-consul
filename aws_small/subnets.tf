@@ -1,7 +1,7 @@
 resource "aws_subnet" "service" {
   vpc_id                  = "${aws_vpc.small.id}"
   availability_zone       = "${var.consul_deploy_region}a"
-  cidr_block              = "10.100.3.0/24"
+  cidr_block              = "10.100.1.0/24"
   map_public_ip_on_launch = "false"
   tags {
     Name = "service"
@@ -11,7 +11,7 @@ resource "aws_subnet" "service" {
 resource "aws_subnet" "data" {
   vpc_id                  = "${aws_vpc.small.id}"
   availability_zone       = "${var.consul_deploy_region}b"
-  cidr_block              = "10.100.4.0/24"
+  cidr_block              = "10.100.2.0/24"
   map_public_ip_on_launch = "false"
   tags {
     Name = "data"
@@ -21,7 +21,7 @@ resource "aws_subnet" "data" {
 resource "aws_subnet" "public" {
   vpc_id                  = "${aws_vpc.small.id}"
   availability_zone       = "${var.consul_deploy_region}a"
-  cidr_block              = "10.100.5.0/24"
+  cidr_block              = "10.100.3.0/24"
   map_public_ip_on_launch = "true"
   tags {
     Name = "public"

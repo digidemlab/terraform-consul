@@ -1,6 +1,9 @@
 variable "consul_aws_access_key" {}
 variable "consul_aws_secret_key" {}
 variable "consul_deploy_region" {}
+variable "build_key" {}
+variable "domain" {}
+variable "with_vpn" {}
 
 provider "aws" {
   access_key  = "${var.consul_aws_access_key}"

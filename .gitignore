@@ -1,1 +1,2 @@
-*/*.tfvars
+/aws_small/terraform.tfstate
+/aws_small/terraform.tfstate.backup
