@@ -1,2 +1,3 @@
-/aws_small/terraform.tfstate
-/aws_small/terraform.tfstate.backup
+/aws/terraform.tfstate
+/aws/terraform.tfstate.backup
+/aws/.terraform
