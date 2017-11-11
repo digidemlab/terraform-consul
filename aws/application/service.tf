@@ -1,14 +1,13 @@
 variable "build_key" {}
+variable "cloud_name" {}
 variable "cloud_size" {}
-variable "domain" {}
+variable "lb_name" {}
+variable "service_deploy_region" {}
 variable "subnet_id" {}
 variable "vpc_id" {}
-variable "zone_id" {}
-
-
 
 resource "aws_security_group" "service-sg" {
-  name                   = "vpn-sg"
+  name                   = "service-sg"
   vpc_id                 = "${var.vpc_id}"
   description            = "service security group"
   tags {
@@ -29,7 +28,7 @@ resource "aws_security_group" "service-sg" {
     cidr_blocks          = ["0.0.0.0/0"]
   }
 
-  # For OpenVPN Client Web Server and Admin Web UI
+  # For Openservice Client Web Server and Admin Web UI
   ingress {
     from_port            = 80
     to_port              = 80
@@ -45,7 +44,7 @@ resource "aws_security_group" "service-sg" {
 }
 
 # get the most recent ubuntu
-data "aws_ami" "ubuntu" {
+data "aws_ami" "service" {
     most_recent = true
 
     filter {
@@ -61,38 +60,30 @@ data "aws_ami" "ubuntu" {
     owners = ["099720109477"] # Canonical
 }
 
-# set up an a record and ip for the service
-resource "aws_eip" "service-eip" {
-    vpc = true
+resource "aws_autoscaling_group" "service-asg" {
+  availability_zones   = ["${var.service_deploy_region}-a"]
+  name                 = "${var.cloud_name}-asg"
+  max_size             = "1"
+  min_size             = "1"
+  desired_capacity     = "1"
+  force_delete         = true
+  launch_configuration = "${aws_launch_configuration.service-lc.name}"
+  load_balancers       = ["${var.lb_name}"]
+  vpc_zone_identifier  = ["${var.subnet_id}"]
+  tag {
+    key                 = "Name"
+    value               = "service-asg"
+    propagate_at_launch = "true"
+  }
 }
 
-resource "aws_route53_record" "service-dns" {
-    zone_id = "${var.zone_id}"
-    name = "service.${var.domain}"
-    type = "A"
-    ttl = "300"
-    records = ["${aws_eip.service-eip.private_ip}"]
-}
-
-resource "aws_instance" "service" {
-    ami           = "${data.aws_ami.ubuntu.id}"
-    instance_type = "t2.micro"
-    key_name = "${var.build_key}"
-    vpc_security_group_ids = ["${aws_security_group.}"]
-    subnet_id = "${var.subnet_id}"
-    tags {
-        Name = "mock-service"
-    }
-}
-
-output "image_id" {
-    value = "${data.aws_ami.ubuntu.id}"
-}
-
-output "instance_id" {
-    value = "${aws_instance.service.id}"
-}
-
-output "instance_ip" {
-    value = "${aws_instance.service.private_ip}"
+resource "aws_launch_configuration" "service-lc" {
+  name = "${var.cloud_name}-service-asg"
+  image_id = "${data.aws_ami.service.id}"
+  instance_type = "t2.micro"
+  security_groups = ["${aws_security_group.service-sg.id}"]
+  key_name = "${var.build_key}"
+  lifecycle {
+    create_before_destroy = true
+  }
 }

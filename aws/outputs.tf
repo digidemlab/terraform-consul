@@ -1,17 +1,9 @@
-output "small_vpc_id" {
-    value = "${aws_vpc.small.id}"
+output "vpc_id" {
+    value = "${aws_vpc.vpc.id}"
 }
 
-output "consul_image_id" {
+output "service_image_id" {
     value = "${module.service.image_id}"
-}
-
-output "consul_instance_id" {
-    value = "${module.service.instance_id}"
-}
-
-output "consul_ip" {
-    value = "${module.service.instance_ip}"
 }
 
 output "zone_id" {
@@ -20,4 +12,8 @@ output "zone_id" {
 
 output "vpn_ami" {
     value = "${module.vpn.vpn_ami_id}"
+}
+
+output "vpn_dns" {
+    value = "${module.vpn.vpn-dns}"
 }

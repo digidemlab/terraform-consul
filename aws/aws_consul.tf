@@ -1,39 +1,39 @@
 variable "build_key" {}
 variable "cloud_name" {}
 variable "cloud_size" {}
-variable "consul_aws_access_key" {}
-variable "consul_aws_secret_key" {}
-variable "consul_deploy_region" {}
+variable "service_aws_access_key" {}
+variable "service_aws_secret_key" {}
+variable "service_deploy_region" {}
 variable "domain" {}
 variable "vpns_enabled" {}
 
 
 provider "aws" {
-  access_key  = "${var.consul_aws_access_key}"
-  secret_key  = "${var.consul_aws_secret_key}"
-  region      = "${var.consul_deploy_region}"
+  access_key  = "${var.service_aws_access_key}"
+  secret_key  = "${var.service_aws_secret_key}"
+  region      = "${var.service_deploy_region}"
 }
 
-resource "aws_vpc" "small" {
+resource "aws_vpc" "vpc" {
   cidr_block            = "10.100.0.0/16"
   enable_dns_support    = "true"
   enable_dns_hostnames  = "true"
   tags {
-    Name = "small"
+    Name = "${var.cloud_name}"
   }
 }
 
-resource "aws_internet_gateway" "small_gw" {
-  vpc_id  = "${aws_vpc.small.id}"
+resource "aws_internet_gateway" "gateway" {
+  vpc_id  = "${aws_vpc.vpc.id}"
   tags    = {
-    Name = "small-gw"
+    Name = "${var.cloud_name}-gw"
   }
 }
 
 resource "aws_route" "internet_access" {
-  route_table_id         = "${aws_vpc.small.main_route_table_id}"
+  route_table_id         = "${aws_vpc.vpc.main_route_table_id}"
   destination_cidr_block = "0.0.0.0/0"
-  gateway_id             = "${aws_internet_gateway.small_gw.id}"
+  gateway_id             = "${aws_internet_gateway.gateway.id}"
 }
 
 data "aws_route53_zone" "zone" {
@@ -43,49 +43,51 @@ data "aws_route53_zone" "zone" {
 module "service" {
   source = "./application"
   build_key = "${var.build_key}"
+  cloud_name = "${var.cloud_name}"
   cloud_size = "${var.cloud_size}"
-  domain = "${var.domain}"
+  lb_name = "${module.loadbalancer.service_alb_name}"
+  service_deploy_region = "${var.service_deploy_region}"
   subnet_id = "${aws_subnet.service.id}"
-  vpc_id = "${aws_vpc.small.id}"
-  zone_id = "${data.aws_route53_zone.zone.id}"
+  vpc_id = "${aws_vpc.vpc.id}"
 }
 
 module "database" {
   source = "./database"
   build_key = "${var.build_key}"
+  cloud_name = "${var.cloud_name}"
   cloud_size = "${var.cloud_size}"
-  domain = "${var.domain}"
   subnet_id = "${aws_subnet.data.id}"
-  vpc_id = "${aws_vpc.small.id}"
-  zone_id = "${data.aws_route53_zone.zone.id}"
+  vpc_id = "${aws_vpc.vpc.id}"
 }
 
 module "nat" {
   source = "./nat"
   build_key = "${var.build_key}"
+  cloud_name = "${var.cloud_name}"
   cloud_size = "${var.cloud_size}"
-  domain = "${var.domain}"
-  subnet_id = "${aws_subnet.public.id}"
-  vpc_id = "${aws_vpc.small.id}"
-  zone_id = "${data.aws_route53_zone.zone.id}"
+  subnet_id = "${aws_subnet.public-a.id}"
+  vpc_id = "${aws_vpc.vpc.id}"
 }
 
 module "vpn" {
   source = "./vpn"
   build_key = "${var.build_key}"
+  cloud_name = "${var.cloud_name}"
   cloud_size = "${var.cloud_size}"
   domain = "${var.domain}"
-  subnet_id = "${aws_subnet.public.id}"
-  vpc_id = "${aws_vpc.small.id}"
+  subnet_id = "${aws_subnet.public-a.id}"
+  vpc_id = "${aws_vpc.vpc.id}"
   zone_id = "${data.aws_route53_zone.zone.id}"
 }
 
 module "loadbalancer" {
   source = "./loadbalancer"
   build_key = "${var.build_key}"
+  cloud_name = "${var.cloud_name}"
   cloud_size = "${var.cloud_size}"
   domain = "${var.domain}"
-  subnet_id = "${aws_subnet.public.id}"
-  vpc_id = "${aws_vpc.small.id}"
+  subnet_a_id = "${aws_subnet.public-a.id}"
+  subnet_b_id = "${aws_subnet.public-b.id}"
+  vpc_id = "${aws_vpc.vpc.id}"
   zone_id = "${data.aws_route53_zone.zone.id}"
 }
