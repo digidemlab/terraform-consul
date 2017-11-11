@@ -1,9 +1,18 @@
-resource "aws_security_group" "small-vpn-sg" {
+variable "build_key" {}
+variable "cloud_size" {}
+variable "domain" {}
+variable "subnet_id" {}
+variable "vpc_id" {}
+variable "zone_id" {}
+
+
+
+resource "aws_security_group" "vpn-sg" {
   name                   = "vpn-sg"
-  vpc_id                 = "${aws_vpc.small.id}"
+  vpc_id                 = "${var.vpc_id}"
   description            = "OpenVPN security group"
   tags {
-    Name = "small-vpn-sg" }
+    Name = "vpn-sg" }
 
   ingress {
     from_port            = 0
@@ -47,41 +56,39 @@ resource "aws_security_group" "small-vpn-sg" {
 }
 
 resource "aws_eip_association" "vpn-eip-assoc" {
-  instance_id = "${aws_instance.small-openvpn.id}"
-  allocation_id = "${aws_eip.small-vpn-eip.id}"
+  instance_id = "${aws_instance.openvpn.id}"
+  allocation_id = "${aws_eip.vpn-eip.id}"
 }
 
 # get the latest ami for open vpn
 data "aws_ami" "openvpn" {
     most_recent = true
-
     filter {
-        name   = "name"
-        values = ["ubuntu/images/hvm-ssd/ubuntu-xenial-16.04-amd64-server-*"]
+      name = "name"
+      values = ["OpenVPN Access Server 2*"]
     }
-
-    owners = ["099720109477"] # OpenVPN
+    owners = ["573553919781"] # OpenVPN
 }
 
-resource "aws_instance" "small-openvpn" {
+resource "aws_instance" "openvpn" {
   ami = "${data.aws_ami.openvpn.id}"
   instance_type = "t2.small"
   key_name = "${var.build_key}"
-  vpc_security_group_ids = ["${aws_security_group.small-vpn-sg.id}"]
-  subnet_id = "${aws_subnet.public.id}"
+  vpc_security_group_ids = ["${aws_security_group.vpn-sg.id}"]
+  subnet_id = "${var.subnet_id}"
   tags {
-    Name = "small-vpn"
+    Name = "vpn"
   }
 }
 
-resource "aws_eip" "small-vpn-eip" {
+resource "aws_eip" "vpn-eip" {
   vpc       = true
 }
 
-resource "aws_route53_record" "small-vpn-dns" {
-   zone_id = "${var.build_key}"
-   name = "small-vpn.${var.domain}"
+resource "aws_route53_record" "vpn-dns" {
+   zone_id = "${var.zone_id}"
+   name = "vpn.${var.domain}"
    type = "A"
    ttl = "300"
-   records = ["${aws_eip.small-vpn-eip.public_ip}"]
+   records = ["${aws_eip.vpn-eip.public_ip}"]
 }

@@ -1,9 +1,12 @@
+variable "build_key" {}
+variable "cloud_name" {}
+variable "cloud_size" {}
 variable "consul_aws_access_key" {}
 variable "consul_aws_secret_key" {}
 variable "consul_deploy_region" {}
-variable "build_key" {}
 variable "domain" {}
-variable "with_vpn" {}
+variable "vpns_enabled" {}
+
 
 provider "aws" {
   access_key  = "${var.consul_aws_access_key}"
@@ -33,22 +36,56 @@ resource "aws_route" "internet_access" {
   gateway_id             = "${aws_internet_gateway.small_gw.id}"
 }
 
+data "aws_route53_zone" "zone" {
+  name = "${var.domain}"
+}
+
 module "service" {
   source = "./application"
+  build_key = "${var.build_key}"
+  cloud_size = "${var.cloud_size}"
+  domain = "${var.domain}"
+  subnet_id = "${aws_subnet.service.id}"
+  vpc_id = "${aws_vpc.small.id}"
+  zone_id = "${data.aws_route53_zone.zone.id}"
 }
 
-output "small_vpc_id" {
-    value = "${aws_vpc.small.id}"
+module "database" {
+  source = "./database"
+  build_key = "${var.build_key}"
+  cloud_size = "${var.cloud_size}"
+  domain = "${var.domain}"
+  subnet_id = "${aws_subnet.data.id}"
+  vpc_id = "${aws_vpc.small.id}"
+  zone_id = "${data.aws_route53_zone.zone.id}"
 }
 
-output "consul_image_id" {
-    value = "${module.service.image_id}"
+module "nat" {
+  source = "./nat"
+  build_key = "${var.build_key}"
+  cloud_size = "${var.cloud_size}"
+  domain = "${var.domain}"
+  subnet_id = "${aws_subnet.public.id}"
+  vpc_id = "${aws_vpc.small.id}"
+  zone_id = "${data.aws_route53_zone.zone.id}"
 }
 
-output "consul_instance_id" {
-    value = "${module.service.instance_id}"
+module "vpn" {
+  source = "./vpn"
+  build_key = "${var.build_key}"
+  cloud_size = "${var.cloud_size}"
+  domain = "${var.domain}"
+  subnet_id = "${aws_subnet.public.id}"
+  vpc_id = "${aws_vpc.small.id}"
+  zone_id = "${data.aws_route53_zone.zone.id}"
 }
 
-output "consul_ip" {
-    value = "${module.service.instance_ip}"
+module "loadbalancer" {
+  source = "./loadbalancer"
+  build_key = "${var.build_key}"
+  cloud_size = "${var.cloud_size}"
+  domain = "${var.domain}"
+  subnet_id = "${aws_subnet.public.id}"
+  vpc_id = "${aws_vpc.small.id}"
+  zone_id = "${data.aws_route53_zone.zone.id}"
 }

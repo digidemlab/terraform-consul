@@ -1,4 +1,4 @@
-# aws nat for private networks
+# rds instance of postgres
 variable "build_key" {}
 variable "cloud_size" {}
 variable "domain" {}
