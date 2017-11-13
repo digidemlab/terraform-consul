@@ -61,7 +61,7 @@ data "aws_ami" "service" {
 }
 
 resource "aws_autoscaling_group" "service-asg" {
-  availability_zones   = ["${var.service_deploy_region}-a"]
+  availability_zones   = ["${var.service_deploy_region}a"]
   name                 = "${var.cloud_name}-asg"
   max_size             = "1"
   min_size             = "1"

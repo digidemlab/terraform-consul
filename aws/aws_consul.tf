@@ -1,12 +1,12 @@
 variable "build_key" {}
 variable "cloud_name" {}
 variable "cloud_size" {}
+variable "db_passord" {}
+variable "domain" {}
 variable "service_aws_access_key" {}
 variable "service_aws_secret_key" {}
 variable "service_deploy_region" {}
-variable "domain" {}
 variable "vpns_enabled" {}
-
 
 provider "aws" {
   access_key  = "${var.service_aws_access_key}"
@@ -51,15 +51,6 @@ module "service" {
   vpc_id = "${aws_vpc.vpc.id}"
 }
 
-module "database" {
-  source = "./database"
-  build_key = "${var.build_key}"
-  cloud_name = "${var.cloud_name}"
-  cloud_size = "${var.cloud_size}"
-  subnet_id = "${aws_subnet.data.id}"
-  vpc_id = "${aws_vpc.vpc.id}"
-}
-
 module "nat" {
   source = "./nat"
   build_key = "${var.build_key}"
@@ -90,4 +81,36 @@ module "loadbalancer" {
   subnet_b_id = "${aws_subnet.public-b.id}"
   vpc_id = "${aws_vpc.vpc.id}"
   zone_id = "${data.aws_route53_zone.zone.id}"
+}
+
+module "database" {
+  source = "./database"
+  identifier = "postgres-db"
+  engine            = "postgres"
+  engine_version    = "9.6.3"
+  instance_class    = "db.t1.micro"
+  allocated_storage = 5
+  storage_encrypted = false
+  db_subnet_group_name = "data-group"
+
+  # NOTE: Do NOT use 'user' as the value for 'username' as it throws:
+  # "Error creating DB Instance: InvalidParameterValue: MasterUsername
+  # user cannot be used as it is a reserved word
+  name = "postgres-database"
+  username = "administrator"
+  password = "${var.db_password}"
+  port     = "5432"
+  snapshot_identifier = "${var.cloud_name}-database"
+  multi_az = false
+  publicly_accessible = false
+  maintenance_window = "Mon:00:00-Mon:03:00"
+  backup_window      = "03:00-06:00"
+  # disable backups to create DB faster
+  backup_retention_period = 0
+  tags = {
+    Environment = "dev"
+  }
+  family = "postgres9.6"
+  # Snapshot name upon DB deletion
+  final_snapshot_identifier = "${var.cloud_name}-final-snap"
 }

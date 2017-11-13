@@ -46,19 +46,3 @@ resource "aws_db_subnet_group" "data-group" {
         Name = "data-group"
     }
 }
-
-output "service_subnet_id" {
-    value = "${aws_subnet.service.id}"
-}
-
-output "data_subnet_id" {
-    value = "${aws_subnet.data.id}"
-}
-
-output "public_a_subnet_id" {
-    value = "${aws_subnet.public-a.id}"
-}
-
-output "public_b_subnet_id" {
-    value = "${aws_subnet.public-b.id}"
-}

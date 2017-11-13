@@ -41,15 +41,14 @@ resource "aws_alb_target_group" "service" {
   vpc_id   = "${var.vpc_id}"
 }
 
-resource "aws_alb" "service-alb" {
+resource "aws_lb" "service-alb" {
   name            = "service-alb"
   subnets         = ["${var.subnet_a_id}", "${var.subnet_b_id}"]
   security_groups = ["${aws_security_group.lb-sg.id}"]
-  internal = false
 }
 
 resource "aws_alb_listener" "service-frontend" {
-  load_balancer_arn = "${aws_alb.service-alb.id}"
+  load_balancer_arn = "${aws_lb.service-alb.id}"
   port              = "80"
   protocol          = "HTTP"
 

@@ -4,5 +4,6 @@ cloud_size = "<options are small, medium, and large"
 consul_aws_access_key = "xxxxxxxxxxxxxxxxx"
 consul_aws_secret_key = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 consul_deploy_region = "<the aws region you want to deploy>"
+db_password = "<a secure password for your postgres database>"
 domain = "<a top level domain>"
 vpns_enabled = 0
