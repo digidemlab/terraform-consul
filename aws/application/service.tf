@@ -1,7 +1,7 @@
 variable "build_key" {}
 variable "cloud_name" {}
 variable "cloud_size" {}
-variable "lb_name" {}
+variable "lb_target_group_arn" {}
 variable "service_deploy_region" {}
 variable "subnet_id" {}
 variable "vpc_id" {}
@@ -30,8 +30,8 @@ resource "aws_security_group" "service-sg" {
 
   # For Openservice Client Web Server and Admin Web UI
   ingress {
-    from_port            = 80
-    to_port              = 80
+    from_port            = 8080
+    to_port              = 8080
     protocol             = "tcp"
     cidr_blocks          = ["0.0.0.0/0"]
   }
@@ -63,12 +63,11 @@ data "aws_ami" "service" {
 resource "aws_autoscaling_group" "service-asg" {
   availability_zones   = ["${var.service_deploy_region}a"]
   name                 = "${var.cloud_name}-asg"
-  max_size             = "1"
+  max_size             = "2"
   min_size             = "1"
   desired_capacity     = "1"
   force_delete         = true
   launch_configuration = "${aws_launch_configuration.service-lc.name}"
-  load_balancers       = ["${var.lb_name}"]
   vpc_zone_identifier  = ["${var.subnet_id}"]
   tag {
     key                 = "Name"
@@ -83,7 +82,13 @@ resource "aws_launch_configuration" "service-lc" {
   instance_type = "t2.micro"
   security_groups = ["${aws_security_group.service-sg.id}"]
   key_name = "${var.build_key}"
+  associate_public_ip_address = true
   lifecycle {
     create_before_destroy = true
   }
+}
+
+resource "aws_autoscaling_attachment" "service-asg-attachment" {
+  autoscaling_group_name = "${aws_autoscaling_group.service-asg.id}"
+  alb_target_group_arn   = "${var.lb_target_group_arn}"
 }

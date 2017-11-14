@@ -10,14 +10,6 @@ output "zone_id" {
     value = "${data.aws_route53_zone.zone.id}"
 }
 
-output "vpn_ami" {
-    value = "${module.vpn.vpn_ami_id}"
-}
-
-output "vpn_dns" {
-    value = "${module.vpn.vpn-dns}"
-}
-
 output "service_subnet_id" {
     value = "${aws_subnet.service.id}"
 }

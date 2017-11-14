@@ -1,3 +1,3 @@
-output "service_alb_name" {
-    value = "${aws_lb.service-alb.name}"
+output "lb_target_group_arn" {
+    value = "${aws_alb_target_group.service.arn}"
 }

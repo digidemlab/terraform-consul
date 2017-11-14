@@ -22,5 +22,5 @@ resource "aws_db_instance" "database" {
   backup_window           = "${var.backup_window}"
   backup_retention_period = "${var.backup_retention_period}"
   tags = "${merge(var.tags, map("Name", format("%s", var.identifier)))}"
-}
   final_snapshot_identifier   = "${var.final_snapshot_identifier}"
+}

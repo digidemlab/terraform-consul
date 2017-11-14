@@ -1,7 +1,7 @@
 variable "build_key" {}
 variable "cloud_name" {}
 variable "cloud_size" {}
-variable "db_passord" {}
+variable "db_password" {}
 variable "domain" {}
 variable "service_aws_access_key" {}
 variable "service_aws_secret_key" {}
@@ -36,6 +36,25 @@ resource "aws_route" "internet_access" {
   gateway_id             = "${aws_internet_gateway.gateway.id}"
 }
 
+resource "aws_route_table" "routes" {
+  vpc_id = "${aws_vpc.vpc.id}"
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = "${aws_internet_gateway.gateway.id}"
+  }
+}
+
+resource "aws_route_table_association" "route_assoc_a" {
+  subnet_id      = "${aws_subnet.public-a.id}"
+  route_table_id = "${aws_route_table.routes.id}"
+}
+
+resource "aws_route_table_association" "route_assoc_b" {
+  subnet_id      = "${aws_subnet.public-b.id}"
+  route_table_id = "${aws_route_table.routes.id}"
+}
+
 data "aws_route53_zone" "zone" {
   name = "${var.domain}"
 }
@@ -45,30 +64,10 @@ module "service" {
   build_key = "${var.build_key}"
   cloud_name = "${var.cloud_name}"
   cloud_size = "${var.cloud_size}"
-  lb_name = "${module.loadbalancer.service_alb_name}"
+  lb_target_group_arn = "${module.loadbalancer.lb_target_group_arn}"
   service_deploy_region = "${var.service_deploy_region}"
   subnet_id = "${aws_subnet.service.id}"
   vpc_id = "${aws_vpc.vpc.id}"
-}
-
-module "nat" {
-  source = "./nat"
-  build_key = "${var.build_key}"
-  cloud_name = "${var.cloud_name}"
-  cloud_size = "${var.cloud_size}"
-  subnet_id = "${aws_subnet.public-a.id}"
-  vpc_id = "${aws_vpc.vpc.id}"
-}
-
-module "vpn" {
-  source = "./vpn"
-  build_key = "${var.build_key}"
-  cloud_name = "${var.cloud_name}"
-  cloud_size = "${var.cloud_size}"
-  domain = "${var.domain}"
-  subnet_id = "${aws_subnet.public-a.id}"
-  vpc_id = "${aws_vpc.vpc.id}"
-  zone_id = "${data.aws_route53_zone.zone.id}"
 }
 
 module "loadbalancer" {
@@ -85,22 +84,21 @@ module "loadbalancer" {
 
 module "database" {
   source = "./database"
-  identifier = "postgres-db"
+  identifier = "${var.cloud_name}db"
   engine            = "postgres"
   engine_version    = "9.6.3"
-  instance_class    = "db.t1.micro"
+  instance_class    = "db.t2.micro"
   allocated_storage = 5
   storage_encrypted = false
-  db_subnet_group_name = "data-group"
+  db_subnet_group_name = "${aws_db_subnet_group.data-group.name}"
 
   # NOTE: Do NOT use 'user' as the value for 'username' as it throws:
   # "Error creating DB Instance: InvalidParameterValue: MasterUsername
   # user cannot be used as it is a reserved word
-  name = "postgres-database"
+  name = "${var.cloud_name}database"
   username = "administrator"
   password = "${var.db_password}"
   port     = "5432"
-  snapshot_identifier = "${var.cloud_name}-database"
   multi_az = false
   publicly_accessible = false
   maintenance_window = "Mon:00:00-Mon:03:00"
@@ -110,7 +108,6 @@ module "database" {
   tags = {
     Environment = "dev"
   }
-  family = "postgres9.6"
   # Snapshot name upon DB deletion
-  final_snapshot_identifier = "${var.cloud_name}-final-snap"
+  final_snapshot_identifier = "${var.cloud_name}finalsnap"
 }

@@ -1,13 +1,3 @@
-# aws application loadbalancer
-variable "build_key" {}
-variable "cloud_name" {}
-variable "cloud_size" {}
-variable "domain" {}
-variable "subnet_a_id" {}
-variable "subnet_b_id" {}
-variable "vpc_id" {}
-variable "zone_id" {}
-
 # firewall for the loadbalancer
 resource "aws_security_group" "lb-sg" {
   description = "controls access to the application loadbalancer"
@@ -33,10 +23,9 @@ resource "aws_security_group" "lb-sg" {
 }
 
 ## ALB
-
 resource "aws_alb_target_group" "service" {
-  name     = "alb-target-service"
-  port     = 80
+  name     = "${var.cloud_name}-target-group"
+  port     = 8080
   protocol = "HTTP"
   vpc_id   = "${var.vpc_id}"
 }
@@ -48,12 +37,12 @@ resource "aws_lb" "service-alb" {
 }
 
 resource "aws_alb_listener" "service-frontend" {
-  load_balancer_arn = "${aws_lb.service-alb.id}"
+  load_balancer_arn = "${aws_lb.service-alb.arn}"
   port              = "80"
   protocol          = "HTTP"
 
   default_action {
-    target_group_arn = "${aws_alb_target_group.service.id}"
+    target_group_arn = "${aws_alb_target_group.service.arn}"
     type             = "forward"
   }
 }
